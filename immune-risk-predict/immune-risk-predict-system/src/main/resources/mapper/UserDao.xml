@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.immuserisk.dao.UserDao">
+    <resultMap id="BaseResultMap" type="com.immuserisk.entity.User">
+        <id column="userID" property="userID"/>
+        <result column="userName" property="userName"/>
+        <result column="phoneNumber" property="phoneNumber"/>
+        <result column="password" property="password"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        userID, userName, phoneNumber, password
+    </sql>
+
+    <select id="list" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM User
+        <where>
+            <if test="userName != null and userName != ''">
+                AND userName LIKE CONCAT('%', #{userName}, '%')
+            </if>
+            <if test="phoneNumber != null and phoneNumber != ''">
+                AND phoneNumber LIKE CONCAT('%', #{phoneNumber}, '%')
+            </if>
+        </where>
+        ORDER BY userID DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM User
+        <where>
+            <if test="userName != null and userName != ''">
+                AND userName LIKE CONCAT('%', #{userName}, '%')
+            </if>
+            <if test="phoneNumber != null and phoneNumber != ''">
+                AND phoneNumber LIKE CONCAT('%', #{phoneNumber}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="getById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM User
+        WHERE userID = #{userID}
+    </select>
+
+    <select id="getByPhoneNumber" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM User
+        WHERE phoneNumber = #{phoneNumber}
+    </select>
+
+    <insert id="insert" parameterType="com.immuserisk.entity.User" useGeneratedKeys="true" keyProperty="userID">
+        INSERT INTO User (
+            userName,
+            phoneNumber,
+            password
+        ) VALUES (
+            #{userName},
+            #{phoneNumber},
+            #{password}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.immuserisk.entity.User">
+        UPDATE User
+        <set>
+            <if test="userName != null">
+                userName = #{userName},
+            </if>
+            <if test="phoneNumber != null">
+                phoneNumber = #{phoneNumber},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+        </set>
+        WHERE userID = #{userID}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM User WHERE userID = #{userID}
+    </delete>
+</mapper> 

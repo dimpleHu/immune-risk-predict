@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.immuserisk.dao.DiseaseDao">
+
+    <select id="getAllDiseases" resultType="com.immuserisk.entity.Disease">
+        SELECT * FROM disease
+    </select>
+
+    <!-- 新增：根据ID查询单个疾病 -->
+    <select id="getDiseaseById" resultType="com.immuserisk.entity.Disease">
+        SELECT * FROM disease
+        WHERE diseaseID = #{diseaseID}
+    </select>
+
+    <!-- 新增：根据多个ID查询疾病 -->
+    <select id="getDiseasesByIds" resultType="com.immuserisk.entity.Disease">
+        SELECT * FROM disease
+        WHERE diseaseID IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- 新增：获取diseaseID能被四整除的数据 -->
+    <select id="getDiseasesWithIdDivisibleByFour" resultType="com.immuserisk.entity.Disease">
+        SELECT * FROM disease
+        WHERE diseaseID % 4 = 0
+    </select>
+</mapper>

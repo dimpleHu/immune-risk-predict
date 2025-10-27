@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.immuserisk.dao.CommentDao">
+    <!-- 结果映射 -->
+    <resultMap id="CommentResultMap" type="com.immuserisk.entity.Comment">
+        <id column="commentID" property="commentID"/>
+        <result column="userID" property="userID"/>
+        <result column="orderID" property="orderID"/>
+        <result column="projectID" property="projectID"/>
+        <result column="comments" property="comments"/>
+        <result column="commentImage" property="commentImage"/>
+        <result column="score" property="score"/>
+        <result column="commentTime" property="commentTime"/>
+        <result column="likes" property="likes"/>
+        <result column="userName" property="userName"/>
+        <result column="projectName" property="projectName"/>
+        <collection property="replies" ofType="com.immuserisk.entity.CommentReply">
+            <id column="replyID" property="replyID"/>
+            <result column="replierType" property="replierType"/>
+            <result column="replierID" property="replierID"/>
+            <result column="replyContent" property="replyContent"/>
+            <result column="replyTime" property="replyTime"/>
+            <result column="replierName" property="replierName"/>
+        </collection>
+    </resultMap>
+
+    <!-- 基础查询列 -->
+    <sql id="Base_Column_List">
+        c.commentID, c.userID, c.orderID, c.projectID, c.comments, c.commentImage, 
+        c.score, c.commentTime, c.likes
+    </sql>
+
+    <!-- 获取评论列表 -->
+    <select id="getCommentList" parameterType="map" resultMap="CommentResultMap">
+        SELECT 
+            <include refid="Base_Column_List"/>,
+            u.userName,
+            fp.projectName,
+            r.replyID, r.replierType, r.replierID, r.replyContent, r.replyTime,
+            CASE r.replierType 
+                WHEN 'user' THEN u2.userName 
+                WHEN 'admin' THEN a.adminName 
+            END as replierName
+        FROM Comment c
+        LEFT JOIN User u ON c.userID = u.userID
+        LEFT JOIN FlightProject fp ON c.projectID = fp.projectID
+        LEFT JOIN CommentReply r ON c.commentID = r.commentID
+        LEFT JOIN User u2 ON r.replierType = 'user' AND r.replierID = u2.userID
+        LEFT JOIN Admin a ON r.replierType = 'admin' AND r.replierID = a.adminID
+        <where>
+            <if test="commentID != null">
+                AND c.commentID = #{commentID}
+            </if>
+            <if test="userID != null">
+                AND c.userID = #{userID}
+            </if>
+            <if test="orderID != null">
+                AND c.orderID = #{orderID}
+            </if>
+            <if test="projectID != null">
+                AND c.projectID = #{projectID}
+            </if>
+            <if test="score != null">
+                AND c.score = #{score}
+            </if>
+        </where>
+        ORDER BY c.commentTime DESC
+        <if test="offset != null and limit != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <!-- 获取评论总数 -->
+    <select id="getCommentCount" parameterType="map" resultType="int">
+        SELECT COUNT(DISTINCT c.commentID)
+        FROM Comment c
+        <where>
+            <if test="commentID != null">
+                AND c.commentID = #{commentID}
+            </if>
+            <if test="userID != null">
+                AND c.userID = #{userID}
+            </if>
+            <if test="orderID != null">
+                AND c.orderID = #{orderID}
+            </if>
+            <if test="projectID != null">
+                AND c.projectID = #{projectID}
+            </if>
+            <if test="score != null">
+                AND c.score = #{score}
+            </if>
+        </where>
+    </select>
+
+    <!-- 获取评论回复列表 -->
+    <select id="getCommentReplies" resultType="com.immuserisk.entity.CommentReply">
+        SELECT 
+            r.replyID, r.commentID, r.replierType, r.replierID, 
+            r.replyContent, r.replyTime,
+            CASE r.replierType 
+                WHEN 'user' THEN u.userName 
+                WHEN 'admin' THEN a.adminName 
+            END as replierName
+        FROM CommentReply r
+        LEFT JOIN User u ON r.replierType = 'user' AND r.replierID = u.userID
+        LEFT JOIN Admin a ON r.replierType = 'admin' AND r.replierID = a.adminID
+        WHERE r.commentID = #{commentID}
+        ORDER BY r.replyTime ASC
+    </select>
+
+    <!-- 添加评论回复 -->
+    <insert id="addCommentReply" parameterType="com.immuserisk.entity.CommentReply">
+        INSERT INTO CommentReply (commentID, replierType, replierID, replyContent, replyTime)
+        VALUES (#{commentID}, #{replierType}, #{replierID}, #{replyContent}, #{replyTime})
+    </insert>
+
+    <!-- 删除评论 -->
+    <delete id="deleteComment">
+        DELETE FROM Comment WHERE commentID = #{commentID}
+    </delete>
+
+    <!-- 删除评论回复 -->
+    <delete id="deleteCommentReply">
+        DELETE FROM CommentReply WHERE replyID = #{replyID}
+    </delete>
+
+    <!-- 更新点赞数 -->
+    <update id="updateLikes">
+        UPDATE Comment SET likes = likes + 1 WHERE commentID = #{commentID}
+    </update>
+
+    <resultMap id="CommentMap" type="com.immuserisk.entity.Comment">
+        <id column="commentID" property="commentID"/>
+        <result column="orderID" property="orderID"/>
+        <result column="userID" property="userID"/>
+        <result column="comments" property="comments"/>
+        <result column="commentImage" property="commentImage"/>
+        <result column="score" property="score"/>
+        <result column="commentTime" property="commentTime"/>
+        <result column="likes" property="likes"/>
+    </resultMap>
+
+    <!-- 添加评论 -->
+    <insert id="addComment" parameterType="com.immuserisk.entity.Comment" useGeneratedKeys="true" keyProperty="commentID">
+        INSERT INTO Comment (
+            userID, orderID, projectID, comments, commentImage, score, commentTime, likes
+        ) VALUES (
+            #{userID}, #{orderID}, #{projectID}, #{comments}, #{commentImage}, #{score}, NOW(), #{likes}
+        )
+    </insert>
+
+    <!-- 获取订单评论 -->
+    <select id="getByOrderId" resultMap="CommentResultMap">
+        SELECT 
+            <include refid="Base_Column_List"/>,
+            u.userName,
+            r.replyID, r.replierType, r.replierID, r.replyContent, r.replyTime,
+            CASE r.replierType 
+                WHEN 'user' THEN u2.userName 
+                WHEN 'admin' THEN a.adminName 
+            END as replierName
+        FROM Comment c
+        LEFT JOIN User u ON c.userID = u.userID
+        LEFT JOIN CommentReply r ON c.commentID = r.commentID
+        LEFT JOIN User u2 ON r.replierType = 'user' AND r.replierID = u2.userID
+        LEFT JOIN Admin a ON r.replierType = 'admin' AND r.replierID = a.adminID
+        WHERE c.orderID = #{orderID}
+    </select>
+
+    <!-- 获取用户订单评论列表 -->
+    <select id="getUserOrderComment" parameterType="map" resultMap="CommentResultMap">
+        SELECT 
+            <include refid="Base_Column_List"/>,
+            u.userName,
+            fp.projectName,
+            r.replyID, r.replierType, r.replierID, r.replyContent, r.replyTime,
+            CASE r.replierType 
+                WHEN 'user' THEN u2.userName 
+                WHEN 'admin' THEN a.adminName 
+            END as replierName
+        FROM Comment c
+        LEFT JOIN User u ON c.userID = u.userID
+        LEFT JOIN FlightProject fp ON c.projectID = fp.projectID
+        LEFT JOIN CommentReply r ON c.commentID = r.commentID
+        LEFT JOIN User u2 ON r.replierType = 'user' AND r.replierID = u2.userID
+        LEFT JOIN Admin a ON r.replierType = 'admin' AND r.replierID = a.adminID
+        WHERE c.orderID = #{orderID}
+        AND c.userID = #{userID}
+        ORDER BY c.commentTime DESC
+    </select>
+
+    <!-- 获取项目评论列表 -->
+    <select id="getProjectCommentList" parameterType="map" resultMap="CommentResultMap">
+        SELECT 
+            <include refid="Base_Column_List"/>,
+            u.userName,
+            r.replyID, r.replierType, r.replierID, r.replyContent, r.replyTime,
+            CASE r.replierType 
+                WHEN 'user' THEN u2.userName 
+                WHEN 'admin' THEN a.adminName 
+            END as replierName
+        FROM Comment c
+        LEFT JOIN User u ON c.userID = u.userID
+        LEFT JOIN CommentReply r ON c.commentID = r.commentID
+        LEFT JOIN User u2 ON r.replierType = 'user' AND r.replierID = u2.userID
+        LEFT JOIN Admin a ON r.replierType = 'admin' AND r.replierID = a.adminID
+        WHERE c.projectID = #{projectID}
+        ORDER BY c.commentTime DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 获取项目评论总数 -->
+    <select id="getProjectCommentCount" parameterType="map" resultType="int">
+        SELECT COUNT(DISTINCT c.commentID)
+        FROM Comment c
+        WHERE c.projectID = #{projectID}
+    </select>
+</mapper> 

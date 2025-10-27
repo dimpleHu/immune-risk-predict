@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.immuserisk.dao.AdminDao">
+    <resultMap id="BaseResultMap" type="com.immuserisk.entity.Admin">
+        <id column="adminID" property="adminID"/>
+        <result column="adminName" property="adminName"/>
+        <result column="phoneNumber" property="phoneNumber"/>
+        <result column="password" property="password"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        adminID, adminName, phoneNumber, password
+    </sql>
+
+    <sql id="Base_Column_List_No_Password">
+        adminID, adminName, phoneNumber
+    </sql>
+
+    <select id="getByPhoneNumber" resultType="com.immuserisk.entity.Admin">
+        SELECT * FROM Admin WHERE phoneNumber = #{phoneNumber}
+    </select>
+
+    <select id="list" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List_No_Password"/>
+        from admin
+        <where>
+            <if test="adminName != null and adminName != ''">
+                and adminName like concat('%', #{adminName}, '%')
+            </if>
+            <if test="phoneNumber != null and phoneNumber != ''">
+                and phoneNumber like concat('%', #{phoneNumber}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM Admin
+        <where>
+            <if test="adminName != null and adminName != ''">
+                AND adminName LIKE CONCAT('%', #{adminName}, '%')
+            </if>
+            <if test="phoneNumber != null and phoneNumber != ''">
+                AND phoneNumber LIKE CONCAT('%', #{phoneNumber}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="page" resultType="com.immuserisk.entity.Admin">
+        SELECT * FROM Admin
+        <where>
+            <if test="adminName != null and adminName != ''">
+                AND adminName LIKE CONCAT('%', #{adminName}, '%')
+            </if>
+            <if test="phoneNumber != null and phoneNumber != ''">
+                AND phoneNumber LIKE CONCAT('%', #{phoneNumber}, '%')
+            </if>
+        </where>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <insert id="insert" parameterType="com.immuserisk.entity.Admin">
+        INSERT INTO Admin (adminName, phoneNumber, password)
+        VALUES (#{adminName}, #{phoneNumber}, #{password})
+    </insert>
+
+    <update id="update" parameterType="com.immuserisk.entity.Admin">
+        UPDATE Admin
+        <set>
+            <if test="adminName != null">adminName = #{adminName},</if>
+            <if test="phoneNumber != null">phoneNumber = #{phoneNumber},</if>
+            <if test="password != null">password = #{password},</if>
+        </set>
+        WHERE adminID = #{adminID}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM Admin WHERE adminID = #{adminID}
+    </delete>
+
+    <select id="getById" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from admin
+        where adminID = #{adminID}
+    </select>
+</mapper> 

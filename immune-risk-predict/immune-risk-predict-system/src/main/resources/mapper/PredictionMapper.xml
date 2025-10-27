@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.immuserisk.dao.PredictionDao">
+    <!-- 数据库表字段与实体类属性的映射 -->
+    <resultMap id="predictionResultMap" type="com.immuserisk.entity.Prediction">
+        <id property="predictionID" column="predictionID"/>
+        <result property="userID" column="userID"/>
+        <result property="age" column="age"/>
+        <result property="sex" column="sex"/>
+        <result property="symptomsID" column="symptomsID"/>
+        <result property="symptoms" column="symptoms"/>
+        <result property="diseasesID" column="diseasesID"/>
+        <result property="predictionTime" column="predictionTime"/>
+        <!-- 新增疾病概率字段映射 -->
+        <result property="diseaseProbabilities" column="diseaseProbabilities"/>
+    </resultMap>
+
+    <!-- 新增预测记录 -->
+    <insert id="insertPrediction" parameterType="com.immuserisk.entity.Prediction">
+        INSERT INTO prediction (
+            userID, age, sex, symptomsID, diseasesID, predictionTime,symptoms
+        ) VALUES (
+                     #{userID}, #{age}, #{sex}, #{symptomsID}, #{diseasesID}, #{predictionTime},#{symptoms}
+                 )
+    </insert>
+
+    <!-- 根据ID查询预测记录 -->
+    <select id="selectPredictionById" parameterType="Integer" resultMap="predictionResultMap">
+        SELECT * FROM prediction WHERE predictionID = #{predictionID}
+    </select>
+
+    <!-- 根据用户ID查询预测记录 -->
+    <select id="selectPredictionsByUserId" parameterType="Integer" resultMap="predictionResultMap">
+        SELECT * FROM prediction WHERE userID = #{userID} ORDER BY predictionTime DESC
+    </select>
+
+    <!-- 更新预测记录 -->
+    <update id="updatePrediction" parameterType="com.immuserisk.entity.Prediction">
+        UPDATE prediction SET
+                              userID = #{userID},
+                              age = #{age},
+                              sex = #{sex},
+                              symptomsID = #{symptomsID},
+                              diseasesID = #{diseasesID},
+                              predictionTime = #{predictionTime}
+        WHERE predictionID = #{predictionID}
+    </update>
+
+    <!-- 根据ID删除预测记录 -->
+    <delete id="deletePredictionById" parameterType="Integer">
+        DELETE FROM prediction WHERE predictionID = #{predictionID}
+    </delete>
+
+
+<!--    &lt;!&ndash; 查询用户预测记录列表 &ndash;&gt;-->
+<!--    <select id="getUserPredictionList" resultMap="predictionResultMap" parameterType="map">-->
+<!--        SELECT-->
+<!--        predictionID,-->
+<!--        userID,-->
+<!--        age,-->
+<!--        sex,-->
+<!--        symptoms,-->
+<!--        diseasesID,-->
+<!--        predictionTime-->
+<!--        FROM prediction-->
+<!--        WHERE userID = #{userID}-->
+<!--        <if test="startDate != null and startDate != ''">-->
+<!--            AND DATE(predictionTime) &gt;= #{startDate}-->
+<!--        </if>-->
+<!--        <if test="endDate != null and endDate != ''">-->
+<!--            AND DATE(predictionTime) &lt;= #{endDate}-->
+<!--        </if>-->
+<!--        ORDER BY predictionTime DESC-->
+<!--        <if test="limit != null and offset != null">-->
+<!--            LIMIT #{limit} OFFSET #{offset}-->
+<!--        </if>-->
+<!--    </select>-->
+
+
+    <!-- 查询用户预测记录列表，关联disease表获取概率信息 -->
+    <select id="getUserPredictionList" resultMap="predictionResultMap" parameterType="map">
+        SELECT
+        p.predictionID,
+        p.userID,
+        p.age,
+        p.sex,
+        p.symptoms,
+        p.diseasesID,
+        p.predictionTime,
+        -- 合并相同预测记录的疾病概率，用逗号分隔
+        GROUP_CONCAT(DISTINCT d.probability ORDER BY FIND_IN_SET(d.diseaseID, p.diseasesID)) AS diseaseProbabilities
+        FROM prediction p
+        -- 左连接disease表，通过FIND_IN_SET处理逗号分隔的多个疾病ID
+        LEFT JOIN disease d ON FIND_IN_SET(d.diseaseID, p.diseasesID) > 0
+        WHERE p.userID = #{userID}
+        <if test="startDate != null and startDate != ''">
+            AND DATE(p.predictionTime) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(p.predictionTime) &lt;= #{endDate}
+        </if>
+        -- 按预测ID分组，确保每条预测记录只出现一次
+        GROUP BY p.predictionID
+        ORDER BY p.predictionTime DESC
+        <if test="limit != null and offset != null">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+
+    <!-- 查询用户预测记录总数 -->
+    <select id="getUserPredictionCount" resultType="int" parameterType="map">
+        SELECT COUNT(*)
+        FROM prediction
+        WHERE userID = #{userID}
+        <if test="startDate != null and startDate != ''">
+            AND DATE(predictionTime) &gt;= #{startDate}
+        </if>
+        <if test="endDate != null and endDate != ''">
+            AND DATE(predictionTime) &lt;= #{endDate}
+        </if>
+    </select>
+</mapper>

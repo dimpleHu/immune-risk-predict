@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.immuserisk.dao.TokenBlacklistDao">
+    <resultMap id="BaseResultMap" type="com.immuserisk.entity.TokenBlacklist">
+        <id column="id" property="id"/>
+        <result column="token" property="token"/>
+        <result column="admin_id" property="adminId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="expire_time" property="expireTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.immuserisk.entity.TokenBlacklist">
+        INSERT INTO token_blacklist (token, admin_id, create_time, expire_time)
+        VALUES (#{token}, #{adminId}, #{createTime}, #{expireTime})
+    </insert>
+
+    <select id="getByToken" resultType="com.immuserisk.entity.TokenBlacklist">
+        SELECT * FROM token_blacklist WHERE token = #{token}
+    </select>
+
+    <delete id="deleteExpired">
+        DELETE FROM token_blacklist WHERE expire_time &lt; #{now}
+    </delete>
+</mapper> 
